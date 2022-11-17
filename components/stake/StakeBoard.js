@@ -13,6 +13,8 @@ import { walletaddress } from './../../modules/WalletSlice';
 import { getTokenAllowance, getTokenBalance, getTotalWithdrawLen, getRecentWithdrawLen, getWithdrawInfo, getWithdrawDuration, getWthdrawLimitation } from "./../../constant/web3";
 import { approve, deposit, withdraw } from "./../../constant/web3";
 
+import { covertDecimal } from "./../../constant/decimal";
+
 export const StakeBoard = () => {
   const tokens = availableTokenNames;
   const rdxwalletaddress = useSelector(walletaddress);
@@ -31,6 +33,8 @@ export const StakeBoard = () => {
   const [actionMode, setActionMode] = React.useState('');
   const [actionToken, setActionToken] = React.useState(tokens[0]);
   const [actionAmount, setActionAmount] = React.useState(0);
+
+  const [recentLogs, setRecentLogs] = React.useState([]);
 
   const actionNames = {
     0: "Enter an amount",
@@ -75,7 +79,6 @@ export const StakeBoard = () => {
       else if (_ret == 3) {
         tx = await withdraw(_token, _wallet, _amount);
       }
-      console.log(tx)
 
       if (tx != null) {
         _library.provider.request({
@@ -171,16 +174,29 @@ export const StakeBoard = () => {
         setWithDuration(renderDuration(_withDuration));
         setWithLimitaion(_withLimitation);
 
-        console.log(totalWiths, recentWiths)
         if (recentWiths > 0) {
           var funcs = [];
           for (var i=0; i<recentWiths; i++) {
             funcs.push(getWithdrawInfo(rdxwalletaddress, totalWiths-recentWiths+i+1))
           }
           var infos = await Promise.all(funcs);
-          console.log(infos)
+          var sum = 0;
+          var tmp = [];
+          for (var x in infos) {
+            var amount = infos[x].amount;
+            amount = covertDecimal(amount, 18, 'toNum');
+            sum += amount;
+            tmp.push({
+              amount: amount,
+              createdAt: new Date(1000 * infos[x].createdAt)
+            })
+          }
+          setRecentLogs(tmp);
         }
-        setWithAvailable(_withLimitation);
+        else {
+          setRecentLogs([]);
+        }
+        setWithAvailable(_withLimitation - sum > lpBal ? lpBal : _withLimitation - sum);
       }
       run();
     }
@@ -236,6 +252,15 @@ export const StakeBoard = () => {
       <div className="w-full border border-slate-700 rounded-3xl p-6 mt-6">
         <div>RECENT HISTORY</div>
         
+        {recentLogs.map((item, index) => 
+          <div
+            key={index}
+            className="flex border border-slate-700 rounded-2xl text-xl font-medium mx-2 my-1 p-2 px-4 cursor-pointer hover:border-slate-600"
+          >
+            <div className="w-32">${item.amount}</div>
+            <div className="flex-grow">{item.createdAt.toGMTString()}</div>
+          </div>
+        )}
       </div>
 
       <Dialog onClose={() => setActionDlg(false)} open={actionDlg}>
