@@ -174,13 +174,13 @@ export const StakeBoard = () => {
         setWithDuration(renderDuration(_withDuration));
         setWithLimitaion(_withLimitation);
 
+        var sum = 0;
         if (recentWiths > 0) {
           var funcs = [];
           for (var i=0; i<recentWiths; i++) {
             funcs.push(getWithdrawInfo(rdxwalletaddress, totalWiths-recentWiths+i+1))
           }
           var infos = await Promise.all(funcs);
-          var sum = 0;
           var tmp = [];
           for (var x in infos) {
             var amount = infos[x].amount;
